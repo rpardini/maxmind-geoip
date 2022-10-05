@@ -1,4 +1,4 @@
-FROM alpine:latest
+FROM alpine:3
 
 WORKDIR /geoip
 COPY geoip/mmdb/* /geoip/
