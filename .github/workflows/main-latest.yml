@@ -5,9 +5,14 @@ on:
     branches: [ "main" ]
   schedule:
     - cron: '52 3 * * *' # Scheduled runs every day at 3:52am UTC
+  workflow_dispatch:
+
+permissions:
+  packages: write # to write to ghcr.io
+  contents: write # to commit to the repo (examples)
 
 env:
-  GEOIP_UPDATER_VERSION: "1.9.0" # https://github.com/crazy-max/geoip-updater/releases; still latest as of 5/12/2022
+  GEOIP_UPDATER_VERSION: "1.10.0" # https://github.com/crazy-max/geoip-updater/releases; 1.10.0 updated late Aug/2024
 
 jobs:
   docker:
@@ -22,6 +27,18 @@ jobs:
         with:
           path: ./geoip
           key: ${{ runner.os }}-geoip2
+
+      - name: Commit changes to the info directory # keep GHA workflow alive forever
+        id: commit
+        run: |
+          date > gha.txt
+          git config --global user.name "GHA workflow"
+          git config --global user.email "workflow@github.com"
+          git pull || true # repo might have changed since we started, avoid conflicts
+          git add gha.txt || true
+          git commit -m "Update info" || true
+          git push || { echo "Push failed, retrying"; sleep $((1 + $RANDOM % 10)); git pull --rebase; git push; }
+          git push || { echo "Push failed, retrying"; sleep $((1 + $RANDOM % 10)); git pull --rebase; git push; }
 
       # Grab MaxMind's GeoIP databases by using a nifty utility.
       - name: Grab MaxMind's GeoIP databases
